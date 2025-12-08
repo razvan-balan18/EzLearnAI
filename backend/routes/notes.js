@@ -72,7 +72,7 @@ async function generateSummaryAndQuiz(text) {
           role: "user",
           content: `Analyze these study notes and provide:
 
-1. A comprehensive summary (2-3 paragraphs)
+1. A comprehensive summary (7-8 paragraphs)
 2. 5 quiz questions with answers
 
 Notes:
