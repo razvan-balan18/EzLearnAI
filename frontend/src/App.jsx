@@ -9,6 +9,15 @@ function App() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode);
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
 
   useEffect(() => {
     fetchNotes();
@@ -56,6 +65,13 @@ function App() {
     <div className="app">
       <header className="header">
         <h1>EzLearnAI</h1>
+        <button 
+          className="theme-toggle" 
+          onClick={() => setDarkMode(!darkMode)}
+          aria-label="Toggle dark mode"
+        >
+          {darkMode ? '☀️' : '🌙'}
+        </button>
       </header>
 
       <main className="main-content">
