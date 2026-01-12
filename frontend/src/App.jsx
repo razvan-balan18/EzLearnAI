@@ -4,10 +4,16 @@ import axios from 'axios';
 
 import FileUpload from './components/FileUpload';
 import NoteCard from './components/NoteCard';
+import AuthModal from './components/AuthModal';
+import { useAuth } from './context/AuthContext';
 
 const API_URL = 'http://localhost:5000/api/notes';
 
 function App() {
+  // AUTH STATE
+  const { user, isAuthenticated, logout, loading: authLoading } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   // STATE-URI (variabile care cand se schimba, re-randeaza pagina) 
   
   // Lista de notite primite de la server
@@ -33,13 +39,20 @@ function App() {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
-  // La prima incarcare a paginii: ia notitele de pe server
+  // Fetch notes when auth state changes (logged in/out)
   useEffect(() => {
-    fetchNotes();
-  }, []);
+    if (!authLoading) {
+      if (isAuthenticated) {
+        fetchNotes();
+      } else {
+        // When logged out, clear notes (guest mode shows only session notes)
+        setNotes([]);
+      }
+    }
+  }, [isAuthenticated, authLoading]);
 
 
-  // Ia toate notitele de la server
+  // Ia toate notitele de la server (only for logged in users)
   const fetchNotes = async () => {
     try {
       const response = await axios.get(API_URL);
@@ -50,19 +63,20 @@ function App() {
   };
 
   // Cand utilizatorul incarca un fisier
-  const handleFileUpload = async (file) => {
+  const handleFileUpload = async (file, difficulty = 'medium') => {
     setLoading(true);  // Porneste loading
     setError('');      // Sterge erori vechi
 
     // Pregateste fisierul pentru trimitere
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('difficulty', difficulty);
 
     try {
       // Trimite fisierul la server
-      const response = await axios.post(`${API_URL}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // Note: Don't set Content-Type manually for FormData - axios handles it automatically
+      // This also ensures the Authorization header from defaults is included
+      const response = await axios.post(`${API_URL}/upload`, formData);
 
       // Adauga notita noua la inceputul listei
       setNotes([response.data.note, ...notes]);
@@ -84,21 +98,70 @@ function App() {
     }
   };
 
+  // Update a note locally (e.g., after regenerating quiz)
+  const handleNoteUpdate = (id, updates) => {
+    setNotes(notes.map(note => 
+      note._id === id ? { ...note, ...updates } : note
+    ));
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    setNotes([]);  // Clear notes when logging out
+  };
+
   // === RENDER (ce se afiseaza pe ecran) ===
   return (
     <div className="app">
       <header className="header">
         <h1>EzLearnAI</h1>
-        <button 
-          className="theme-toggle" 
-          onClick={() => setDarkMode(!darkMode)}
-          aria-label="Toggle dark mode"
-        >
-          {darkMode ? '☀️' : '🌙'}
-        </button>
+        
+        <div className="header-actions">
+          {/* Auth buttons */}
+          {isAuthenticated ? (
+            <div className="user-menu">
+              <span className="user-greeting">👋 Hi, {user?.name}</span>
+              <button className="logout-btn" onClick={handleLogout}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button 
+              className="login-btn"
+              onClick={() => setShowAuthModal(true)}
+            >
+              Sign In
+            </button>
+          )}
+          
+          <button 
+            className="theme-toggle" 
+            onClick={() => setDarkMode(!darkMode)}
+            aria-label="Toggle dark mode"
+          >
+            {darkMode ? '☀️' : '🌙'}
+          </button>
+        </div>
       </header>
 
       <main className="main-content">
+        {/* Guest mode notice */}
+        {!isAuthenticated && (
+          <div className="guest-notice">
+            <span className="guest-icon">💡</span>
+            <p>
+              You're using EzLearnAI as a guest. Your notes will only be saved for this session.
+              <button 
+                className="guest-signup-btn"
+                onClick={() => setShowAuthModal(true)}
+              >
+                Sign in to save your notes permanently!
+              </button>
+            </p>
+          </div>
+        )}
+
         {/* Zona de upload fisiere */}
         <FileUpload onUpload={handleFileUpload} loading={loading} />
         
@@ -124,6 +187,7 @@ function App() {
               key={note._id} 
               note={note} 
               onDelete={handleDelete}
+              onUpdate={handleNoteUpdate}
             />
           ))}
         </div>
@@ -131,10 +195,21 @@ function App() {
         {/* Mesaj cand nu ai notite - apare doar daca lista e goala si nu se incarca */}
         {notes.length === 0 && !loading && (
           <div className="empty-state">
-            <p>No notes yet. Upload your first file to get started!</p>
+            <p>
+              {isAuthenticated 
+                ? 'No notes yet. Upload your first file to get started!'
+                : 'Upload a file to create your first study note!'
+              }
+            </p>
           </div>
         )}
       </main>
+
+      {/* Auth Modal */}
+      <AuthModal 
+        isOpen={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import notesRouter from './routes/notes.js';
+import authRouter from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -14,6 +15,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Routes
 app.use('/api/notes', notesRouter);
+app.use('/api/auth', authRouter);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

@@ -13,13 +13,16 @@
   "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "groq-sdk": "^0.37.0",
+    "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.0.1",
     "multer": "^2.0.2",
     "pdf-parse": "^2.4.5",
+    "pdfkit": "^0.17.2",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
